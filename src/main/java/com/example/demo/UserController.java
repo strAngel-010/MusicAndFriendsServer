@@ -142,54 +142,103 @@ public class UserController {
     }
     
     
-    @RequestMapping(path="/searchpage/{ID}/{count}/")
-    public User[] getSearchPageContent(@PathVariable("ID") int ID, @PathVariable("count") int count) {
-    	System.out.print("searchpage ");
+    @RequestMapping(path="/searchpage/{ID}/{count}/{params}/")
+    public User[] getSearchPageContent(@PathVariable("ID") int ID, @PathVariable("count") int count, @PathVariable("params") String params) {
     	User[] userList_ = null;
-    	try {
-    		User[] userList = new User[count];
-    		Connection con = DriverManager.getConnection(DB_URL, USER, PASS);
-    		Statement stmt = con.createStatement();
-        	for (int i = 0; i < count; ++i) {
-        		ResultSet rs = stmt.executeQuery("SELECT \"ID\", name, \"musicPreferences\", city FROM public.\"Users\" WHERE \"ID\"="+i);
-        		if (rs.next()) {
-        			String profileName = rs.getString("name");
-        			String city = rs.getString("city");
+    	if (params.equals("null")) {
+    		System.out.print("searchpage ");
+        	try {
+        		User[] userList = new User[count];
+        		Connection con = DriverManager.getConnection(DB_URL, USER, PASS);
+        		Statement stmt = con.createStatement();
+            	for (int i = 0; i < count; ++i) {
+            		ResultSet rs = stmt.executeQuery("SELECT \"ID\", name, \"musicPreferences\", city FROM public.\"Users\" WHERE \"ID\"="+i);
+            		if (rs.next()) {
+            			String profileName = rs.getString("name");
+            			String city = rs.getString("city");
+                		
+            			boolean[] musicPreferences = new boolean[12];
+            			Array arr = rs.getArray(3);
+            			Integer[] music = (Integer[])arr.getArray();
+            			for (int j = 0; j < music.length; ++j) {
+            				if (music[j] == 1) {
+            					musicPreferences[j] = true;
+            				} else {
+            					musicPreferences[j] = false;
+            				}
+            			}
+            			User user = new User(i, profileName, musicPreferences, city, null, null, 0);
+            			userList[i] = user;
+            		} else {
+            			break;
+            		}
             		
-        			boolean[] musicPreferences = new boolean[12];
-        			Array arr = rs.getArray(3);
-        			Integer[] music = (Integer[])arr.getArray();
-        			for (int j = 0; j < music.length; ++j) {
-        				if (music[j] == 1) {
-        					musicPreferences[j] = true;
-        				} else {
-        					musicPreferences[j] = false;
-        				}
-        			}
-        			User user = new User(i, profileName, musicPreferences, city, null, null, 0);
-        			userList[i] = user;
-        		} else {
-        			break;
-        		}
-        		
-        	}
-        	stmt.close();
-        	con.close();
-        	int i = 0;
-        	while (i < userList.length && userList[i] != null) {
-        		i++;
-        	}
-        	userList_ = new User[i];
-        	for (int j = 0; j < i; ++j) {
-        		userList_[j] = userList[j];
-        	}
-    	} catch (SQLException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-    	System.out.println("done");
-		System.out.println("");
-    	return userList_;
+            	}
+            	stmt.close();
+            	con.close();
+            	int i = 0;
+            	while (i < userList.length && userList[i] != null) {
+            		i++;
+            	}
+            	userList_ = new User[i];
+            	for (int j = 0; j < i; ++j) {
+            		userList_[j] = userList[j];
+            	}
+        	} catch (SQLException e) {
+    			// TODO Auto-generated catch block
+    			e.printStackTrace();
+    		}
+        	System.out.println("done");
+    		System.out.println("");
+        	return userList_;
+    	} else {
+    		User[] userList = new User[count];
+    		Connection con;
+			try {
+				con = DriverManager.getConnection(DB_URL, USER, PASS);
+				Statement stmt = con.createStatement();
+				for (int i = 0; i < count; ++i) {
+					ResultSet rs = stmt.executeQuery("SELECT \"ID\", name, \"musicPreferences\", city FROM public.\"Users\" WHERE \"ID\"="+i);
+					if (rs.next()) {
+						String profileName = rs.getString("name");
+						String profileNamelc = profileName.toLowerCase().replaceAll("\\s+","");
+						String paramslc = params.toLowerCase().replaceAll("\\s+","");
+						if (profileNamelc.contains(paramslc)) {
+							String city = rs.getString("city");
+		        			boolean[] musicPreferences = new boolean[12];
+		        			Array arr = rs.getArray(3);
+		        			Integer[] music = (Integer[])arr.getArray();
+		        			for (int j = 0; j < music.length; ++j) {
+		        				if (music[j] == 1) {
+		        					musicPreferences[j] = true;
+		        				} else {
+		        					musicPreferences[j] = false;
+		        				}
+		        			}
+		        			User user = new User(i, profileName, musicPreferences, city, null, null, 0);
+		        			userList[i] = user;
+						}
+					} else {
+						break;
+					}
+					
+				}
+				stmt.close();
+            	con.close();
+            	int i = 0;
+            	while (i < userList.length && userList[i] != null) {
+            		i++;
+            	}
+            	userList_ = new User[i];
+            	for (int j = 0; j < i; ++j) {
+            		userList_[j] = userList[j];
+            	}
+			} catch (SQLException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+			return userList_;
+    	}
     }
     
     @RequestMapping("/avatars/{ID}/")
